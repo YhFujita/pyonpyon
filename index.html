@@ -585,6 +585,8 @@
                     setTimeout(goBack, 2000); // 2秒後に戻る
                 }, 1200);
             }
+            // 満腹度チェック後に成長チェック
+            checkGrowth();
         }
 
         document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
@@ -774,6 +776,7 @@
             happiness += 12;
             updateMessage("ピョンピョンは ジャンプして あそんでいます！");
             showFloatingText("(^-^)♪");
+            checkGrowth();
 
             const pyonpyon = document.getElementById('pyonpyon');
             pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 6'; // 2回ジャンプを3セット
@@ -842,7 +845,10 @@
 
             // 幸福度も上げる（寝ている間にナデナデ）
             happiness += 1;
+            // 幸福度も上げる（寝ている間にナデナデ）
+            happiness += 1;
             document.getElementById('happiness-value').innerText = happiness;
+            checkGrowth();
         }
 
 
