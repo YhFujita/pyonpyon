@@ -242,12 +242,12 @@
         <button onclick="sleep()">ねる</button>
     </div>
 
-    <div id="sleep-overlay"
+    <div id="sleep-overlay" onclick="showHeartsInSleep()"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); z-index:100; flex-direction:column; justify-content:center; align-items:center;">
         <img id="sleeping-img" src="pyonpyon_sleeping.png" alt="おやすみ"
             style="width: 300px; height: auto; animation: breathe 3s infinite ease-in-out;">
         <div style="color:white; font-size:24px; margin-top:20px;">Zzz...</div>
-        <button onclick="wakeUp()" style="margin-top:20px; font-size: 20px;">おきる</button>
+        <button onclick="wakeUp(); event.stopPropagation();" style="margin-top:20px; font-size: 20px;">おきる</button>
     </div>
 
     <style>
@@ -264,11 +264,12 @@
         }
     </style>
     <div id="food-selection" class="food-selection">
-        <img src="apple.jpg" alt="りんごを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
-        <img src="mikan.jpg" alt="みかんを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
-        <img src="strawberry.jpg" alt="いちごを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
-        <img src="grape.jpg" alt="ぶどうを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
-        <img src="banana.jpg" alt="バナナを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img id="food-apple" src="apple.jpg" alt="りんご" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img id="food-mikan" src="mikan.jpg" alt="みかん" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img id="food-strawberry" src="strawberry.jpg" alt="いちご" class="food-item" draggable="true"
+            ondragstart="drag(event)">
+        <img id="food-grape" src="grape.jpg" alt="ぶどう" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img id="food-banana" src="banana.jpg" alt="バナナ" class="food-item" draggable="true" ondragstart="drag(event)">
         <p>どれを たべさせて あげますか？</p>
         <button onclick="goBack()">もどる</button> <!-- もどるボタンを追加 -->
     </div>
@@ -413,7 +414,13 @@
         function showFoodSelection() {
             document.getElementById('action-buttons').style.display = 'none';
             document.getElementById('food-selection').style.display = 'block';
+            document.getElementById('food-selection').style.display = 'block';
             updateMessage(""); // メッセージをクリア
+
+            // 全ての食材を表示状態にリセット
+            document.querySelectorAll('.food-item').forEach(img => {
+                img.style.display = 'inline-block';
+            });
 
             // もどるボタンの位置を調整
             const returnButton = document.querySelector('#food-selection button');
@@ -446,8 +453,10 @@
                 goBack();
                 updateMessage("ピョンピョンは はみがきを しました！");
 
-                // ドロップイベントをリセット
-                resetDropEvent();
+                brush.remove();
+                returnButton.remove();
+                goBack();
+                updateMessage("ピョンピョンは はみがきを しました！");
             };
             document.body.appendChild(returnButton);
 
@@ -472,44 +481,14 @@
                 brushSound.currentTime = 0;
             });
 
-            // ピョンピョンに当たったときの処理
-            document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
-                event.preventDefault();
-            });
-
-            document.getElementById('pyonpyon').addEventListener('drop', function (event) {
-                event.preventDefault();
-                const draggedItem = event.dataTransfer.getData("text/plain");
-                if (draggedItem === "tyel.jpg") {
-                    updateMessage("");
-                } else {
-                    // 食べ物の処理を行わない
-                    updateMessage("");
-                }
-            });
+            // ピョンピョンに当たったときの処理（グローバルリスナーに任せるため、ここではリスナー追加を行わない）
+            /* 
+            document.getElementById('pyonpyon').addEventListener('dragover', function (event) { ... });
+            document.getElementById('pyonpyon').addEventListener('drop', function (event) { ... });
+            */
         }
 
-        // ドロップイベントをリセットする関数
-        function resetDropEvent() {
-            document.getElementById('pyonpyon').removeEventListener('drop', function (event) {
-                event.preventDefault();
-                const foodName = event.dataTransfer.getData("text/plain");
-                if (foodName === "tyel.jpg") {
-                    updateMessage("");
-                } else if (growthStage === 0) {
-                    feed(foodName);
-                } else {
-                    updateMessage("ピョンピョンは もう おなかいっぱいです！");
-                }
-            });
 
-            // 新しいドロップイベントを追加
-            document.getElementById('pyonpyon').addEventListener('drop', function (event) {
-                event.preventDefault();
-                const foodName = event.dataTransfer.getData("text/plain");
-                feed(foodName);
-            });
-        }
 
         function readBook() {
             // 画像とボタンを非表示にする
@@ -562,19 +541,25 @@
         }
 
         function drag(event) {
-            event.dataTransfer.setData("text/plain", event.target.src);
+            const data = {
+                id: event.target.id,
+                alt: event.target.alt || event.target.getAttribute('alt') || "ごはん",
+                src: event.target.src
+            };
+            event.dataTransfer.setData("text/plain", JSON.stringify(data));
         }
 
-        function feed(foodName) {
-            // ピョンピョン自身の画像がドラッグされた場合は何もしない
-            if (foodName === "http://127.0.0.1:5500/pyonpyon.png") {
-                return; // 何も起こさない
-            }
-
+        function feed(foodId, foodAlt) {
             happiness += 10;
-            updateMessage(`ピョンピョンは ${foodName} `);
+            updateMessage(`ピョンピョンは ${foodAlt} を たべました！ `);
             showFloatingText("(^-^)♪");
             document.getElementById('pyonpyon').classList.add('jump');
+
+            // 食べた食材を非表示にする
+            if (foodId) {
+                const foodElement = document.getElementById(foodId);
+                if (foodElement) foodElement.style.display = 'none';
+            }
 
             // 効果音の再生
             const draggingSound = new Audio('dragging_sound.mp3');
@@ -586,7 +571,7 @@
 
             // 満腹度を増やす
             stomachGauge++;
-            if (stomachGauge >= 5) {
+            if (stomachGauge >= 20) {
                 setTimeout(() => {
                     updateMessage("おなかいっぱいで もう たべられないよ！");
                     showFloatingText("まんぷく！");
@@ -595,21 +580,45 @@
             }
         }
 
+        document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
+            event.preventDefault(); // ドロップを許可するために必要
+        });
+
         document.getElementById('pyonpyon').addEventListener('drop', function (event) {
             event.preventDefault();
-            const foodName = event.dataTransfer.getData("text/plain");
 
-            // ピョンピョン自身がドロップされた場合の処理
-            if (foodName === "http://127.0.0.1:5500/pyonpyon.png") {
+            let data = {};
+            try {
+                const rawData = event.dataTransfer.getData("text/plain");
+                if (rawData) {
+                    data = JSON.parse(rawData);
+                }
+            } catch (e) {
+                // JSONでない場合（外部からのドロップなど）は無視、あるいはURLとして扱う
+                console.error("Drop data parsing error:", e);
+                // 後方互換のため、そのままsrcとして扱ってみる場合の処理をここに入れてもよいが、今回はスキップ
+                return;
+            }
+
+            const { id: foodId, alt: foodAlt, src: foodName } = data;
+
+            // ピョンピョン自身がドロップされた場合やtyel.jpgの場合の処理
+            if (foodName && foodName.endsWith("pyonpyon.png")) {
                 // 何もしない
-            } else if (foodName === "tyel.jpg") {
+            } else if (foodName && foodName.includes("tyel.jpg")) {
                 updateMessage("ピョンピョンは はみがきを して すっきり！");
-            } else if (growthStage === 0) {
-                feed(foodName);
-            } else {
-                updateMessage("ピョンピョンは もう おなかいっぱいです！");
+            } else if (foodId && foodId.startsWith('food-')) {
+                // 通常の食材ドロップ
+                if (stomachGauge < 20) {
+                    feed(foodId, foodAlt);
+                } else {
+                    updateMessage("ピョンピョンは もう おなかいっぱいです！");
+                }
+            } else if (growthStage === 0 && foodName) {
+                // 旧互換性（念のため）
             }
         });
+
 
 
 
@@ -792,21 +801,25 @@
             showFloatingText("(^o^)/");
         }
 
+        function showHeartsInSleep() {
+            showFloatingText("❤");
+        }
+
 
         let growthStage = 0; // 成長段階 (0: 初期, 1: 1回目, 2: 2回目, 3: 3回目)
 
         function checkGrowth() {
-            if (happiness >= 1500 && growthStage < 3) {
+            if (happiness >= 500 && growthStage < 3) { // 1500 -> 500
                 growthStage = 3;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown3.png';
                 updateMessage("ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！");
                 showFloatingText("(^0^)♪");
-            } else if (happiness >= 1000 && growthStage < 2) {
+            } else if (happiness >= 300 && growthStage < 2) { // 1000 -> 300
                 growthStage = 2;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown2.png';
                 updateMessage("ピョンピョンは さらに せいちょう しました！");
                 showFloatingText("(^-^)♪");
-            } else if (happiness >= 500 && growthStage < 1) {
+            } else if (happiness >= 150 && growthStage < 1) { // 500 -> 150
                 growthStage = 1;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown.png';
                 updateMessage("ピョンピョンは せいちょう しました！");
@@ -814,35 +827,9 @@
             }
         }
 
-        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
-            event.preventDefault();
-            const foodName = event.dataTransfer.getData("text/plain");
-            if (foodName === "tyel.jpg") {
-                updateMessage("ピョンピョンは はみがきを して すっきり！");
-            } else if (growthStage === 0) {
-                feed(foodName);
-            } else {
-                updateMessage("ピョンピョンは はみがきを して すっきり！");
-            }
-        });
 
-        document.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', checkGrowth);
-        });
 
-        function drag(event) {
-            event.dataTransfer.setData("text/plain", event.target.alt);
-        }
 
-        document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
-            event.preventDefault();
-        });
-
-        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
-            event.preventDefault();
-            const foodName = event.dataTransfer.getData("text/plain");
-            feed(foodName);
-        });
 
         function goBack() {
             document.getElementById('action-buttons').style.display = 'block';
