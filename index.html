@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ピョンピョン育成ゲーム</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            /* スクロールバーを非表示に */
+            background-size: cover;
+            /* 背景画像を画面全体に表示 */
+            background-repeat: no-repeat;
+            /* 背景画像を繰り返さない */
+            background-position: center;
+            /* 背景画像を中央に配置 */
+        }
+
+        #message {
+            background-color: rgba(144, 144, 144, 0.521);
+            font-size: 32px;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 20px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        img {
+            width: 200px;
+            height: auto;
+            position: relative;
+            /* 位置を相対的に設定 */
+            margin: 0 auto;
+            /* 中央に配置 */
+            display: block;
+            /* ブロック要素として扱う */
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            position: relative;
+            z-index: 10;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #ff1493;
+            transform: scale(1.05);
+        }
+
+        .food-selection {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+            /* フルーツを中央に配置 */
+        }
+
+        .food-item {
+            width: 100px;
+            height: auto;
+            margin: 5px;
+            cursor: pointer;
+            display: inline-block;
+            /* フルーツを横に並べる */
+        }
+
+        .floating-text {
+            position: absolute;
+            animation: floatUpLeft 2s ease-out forwards;
+            font-size: 32px;
+            /* サイズを大きく */
+            color: #ff69b4;
+        }
+
+        @keyframes floatUpLeft {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translate(-50px, -50px) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-100px, -100px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .sanpo-animation {
+            position: absolute;
+            bottom: 10%;
+            /* 画面内に収まるように調整 */
+            left: 0;
+            animation: sanpoMove 3s ease-in-out forwards;
+        }
+
+        @keyframes sanpoMove {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(50vw, -20vh) scale(1.2);
+            }
+
+            100% {
+                transform: translate(100vw, 0) scale(1);
+            }
+        }
+
+        .brush {
+            position: absolute;
+            width: 100px;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .storybook {
+            display: flex;
+            height: 80vh;
+            /* 高さを少し小さくしてボタンが見えるように */
+            align-items: center;
+            /* 垂直方向に中央揃え */
+        }
+
+        .storybook img {
+            width: 40%;
+            /* さらに小さくして見切れないように */
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .storybook-text {
+            width: 60%;
+            padding: 20px;
+            background-color: white;
+            text-align: left;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .next-page-button {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+        }
+
+        .toilet-scene {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+
+        .toilet-scene img {
+            width: 150px;
+            /* ピョンピョンと同じくらいの大きさに設定 */
+            height: auto;
+            margin: 0 10px;
+            /* 画像間のスペースを設定 */
+        }
+
+        @keyframes jumpAnimation {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-30px);
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 14px;
+                /* Adjust font size for smaller screens */
+            }
+
+            #message {
+                font-size: 24px;
+                /* Smaller message font size */
+            }
+
+            button {
+                padding: 8px 16px;
+                /* Adjust button padding */
+                font-size: 14px;
+                /* Smaller button font size */
+            }
+
+            img {
+                width: 80%;
+                /* Make images responsive */
+                height: auto;
+                /* Maintain aspect ratio */
+            }
+
+            .food-item {
+                width: 70%;
+                /* Adjust food item size */
+            }
+
+            .storybook img {
+                width: 80%;
+                /* Adjust storybook image size */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ピョンピョンの おせわゲーム</h1>
+    <img id="pyonpyon" src="pyonpyon.png" alt="ピョンピョン">
+    <div id="action-buttons">
+        <button onclick="takeForWalk()">さんぽ</button>
+        <button onclick="showFoodSelection()">ごはん</button>
+        <button onclick="brushTeeth()">はみがき</button>
+        <button onclick="readBook()">えほん</button>
+        <button onclick="goToToilet()">トイレ</button>
+
+        <button onclick="jump()">ジャンプ</button>
+        <button onclick="sleep()">ねる</button>
+    </div>
+
+    <div id="sleep-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); z-index:100; flex-direction:column; justify-content:center; align-items:center;">
+        <img id="sleeping-img" src="pyonpyon_sleeping.png" alt="おやすみ"
+            style="width: 300px; height: auto; animation: breathe 3s infinite ease-in-out;">
+        <div style="color:white; font-size:24px; margin-top:20px;">Zzz...</div>
+        <button onclick="wakeUp()" style="margin-top:20px; font-size: 20px;">おきる</button>
+    </div>
+
+    <style>
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+    <div id="food-selection" class="food-selection">
+        <img src="apple.jpg" alt="りんごを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img src="mikan.jpg" alt="みかんを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img src="strawberry.jpg" alt="いちごを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img src="grape.jpg" alt="ぶどうを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <img src="banana.jpg" alt="バナナを たべて おいしそう！" class="food-item" draggable="true" ondragstart="drag(event)">
+        <p>どれを たべさせて あげますか？</p>
+        <button onclick="goBack()">もどる</button> <!-- もどるボタンを追加 -->
+    </div>
+    <p id="message"></p>
+
+    <script>
+        // BGMの再生
+        document.getElementById('pyonpyon').addEventListener('click', function () {
+            const bgm = new Audio('candy_peach.mid');
+            bgm.loop = true;
+            bgm.play();
+        });
+
+        let happiness = 0;
+        let isAnimating = false; // アニメーション中かどうかを追跡
+        let stomachGauge = 0; // 満腹度 (最大5)
+        let currentPage = 0; // 現在のページ
+
+
+        const storyPages = [
+            "『みくちゃんの うちで あそぼう！』",
+            "きょうは、みくちゃんの うちに、ピカとキティとニャンニャンが あそびにやってきました。みんなとっても たのしみ！",
+            "まずは、みんなで おりょうりをしました。おいしいクッキーがやけて、みんな おおよろこび！",
+            "つぎは かくれんぼ！ピカはカーテンの うしろ、キティはソファの うしろ、ニャンニャンは たなのなかに かくれました。",
+            "たくさん あそんで、よるに なりました。きょうは おとまり。ふかふかの おふとんで、みんなでぐっすり ねました。",
+            "あさになり、「また あそぼうね！」と やくそくして、みんな えがおで バイバイしました。"
+        ];
+
+        function updateMessage(msg) {
+            document.getElementById('message').innerText = msg;
+        }
+
+        function showFloatingText(text) {
+            if (isAnimating) return; // アニメーション中は新しいアニメーションを開始しない
+            isAnimating = true;
+
+            const floatingText = document.createElement('div');
+            floatingText.className = 'floating-text';
+            floatingText.innerText = text;
+            document.body.appendChild(floatingText);
+
+            // Set initial position near the middle left of the pyonpyon image
+            const pyonpyon = document.getElementById('pyonpyon');
+            const rect = pyonpyon.getBoundingClientRect();
+            floatingText.style.left = `${rect.left + window.scrollX - 20}px`; // 画像の左側に配置
+            floatingText.style.top = `${rect.top + window.scrollY + rect.height / 2}px`; // 画像の中央に配置
+
+            // Remove the text after animation
+            setTimeout(() => {
+                floatingText.remove();
+                isAnimating = false;
+            }, 2000);
+        }
+
+
+        function takeForWalk() {
+            // メッセージをクリア
+            updateMessage(""); // 散歩イベントに入る際にメッセージを消す
+            document.getElementById('action-buttons').style.display = 'none';
+            const pyonpyon = document.getElementById('pyonpyon');
+            document.body.style.backgroundImage = "url('sanpo.jpg')";
+
+            let walkCount = 0;
+            let jumpCount = 0;
+
+            function playJumpSound() {
+                const jumpSound = new Audio('jump07.mp3');
+                jumpSound.play();
+            }
+
+            function initialJump() {
+                if (jumpCount < 3) {
+                    pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 1';
+                    playJumpSound();
+                    jumpCount++;
+                    setTimeout(() => {
+                        pyonpyon.style.animation = '';
+                        initialJump();
+                    }, 500); // ジャンプアニメーションの時間に合わせる
+                } else {
+                    randomMove();
+                }
+            }
+
+            function randomMove() {
+                if (walkCount >= 3) {
+                    // もどるボタンを追加
+                    const returnButton = document.createElement('button');
+                    returnButton.innerText = "もどる";
+                    returnButton.id = 'returnButton';
+                    returnButton.onclick = goBackHome;
+                    document.body.appendChild(returnButton);
+
+                    updateMessage("ピョンピョンは さんぽに いきました！");
+                    showFloatingText("(^-^)♪");
+                    return;
+                }
+
+                // ランダムに2回斜め移動
+                const deltaX = (Math.random() * 300 - 150); // -150から150の範囲でランダム
+                const deltaY = (Math.random() * 300 - 150); // -150から150の範囲でランダム
+
+                const currentTransform = pyonpyon.style.transform.match(/translate\\((.*)px, (.*)px\\)/);
+                const currentX = currentTransform ? parseFloat(currentTransform[1]) : 0;
+                const currentY = currentTransform ? parseFloat(currentTransform[2]) : 0;
+
+                const newX = currentX + deltaX;
+                const newY = currentY + deltaY;
+
+                pyonpyon.style.transition = 'transform 1s ease-in-out';
+                pyonpyon.style.transform = `translate(${newX}px, ${newY}px)`;
+
+                // 移動が完了した後にジャンプ
+                setTimeout(() => {
+                    pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 3'; // 3回ジャンプ
+                    setTimeout(() => {
+                        pyonpyon.style.animation = '';
+                        walkCount++;
+                        randomMove();
+                    }, 1500); // ジャンプアニメーションの時間に合わせる
+                }, 1000); // 移動時間に合わせる
+            }
+
+            initialJump();
+
+            // さんぽで少しお腹が空く
+            stomachGauge = 0;
+        }
+
+        function goBackHome() {
+            // 元の画面に戻す
+            document.getElementById('action-buttons').style.display = 'block';
+            document.body.style.backgroundImage = "none";
+            document.getElementById('pyonpyon').style.transform = 'translate(0, 0)'; // 元の位置に戻す
+            const returnButton = document.getElementById('returnButton');
+            if (returnButton) {
+                returnButton.remove(); // ボタンを削除
+            }
+            updateMessage("");
+        }
+
+        function showFoodSelection() {
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('food-selection').style.display = 'block';
+            updateMessage(""); // メッセージをクリア
+
+            // もどるボタンの位置を調整
+            const returnButton = document.querySelector('#food-selection button');
+            returnButton.style.position = 'fixed';
+            returnButton.style.bottom = '20px';
+            returnButton.style.right = '20px';
+        }
+
+        function brushTeeth() {
+            // ボタンを非表示にして、はみがき画面を表示
+            document.getElementById('action-buttons').style.display = 'none';
+
+            // tyel.jpgを表示
+            const brush = document.createElement('img');
+            brush.src = 'tyel.jpg';
+            brush.className = 'brush';
+            brush.style.left = '30%'; // ピョンピョンに近づける
+            brush.style.top = '50%';
+            brush.draggable = true;
+            brush.ondragstart = drag;
+            document.body.appendChild(brush);
+
+            // もどボタンを追加
+            const returnButton = document.createElement('button');
+            returnButton.innerText = "もどる";
+            returnButton.id = 'returnButton';
+            returnButton.onclick = () => {
+                brush.remove();
+                returnButton.remove();
+                goBack();
+                updateMessage("ピョンピョンは はみがきを しました！");
+
+                // ドロップイベントをリセット
+                resetDropEvent();
+            };
+            document.body.appendChild(returnButton);
+
+            // ドラッグ＆ドロップのイベントを追加
+            brush.ondrag = function () {
+                if (!isAnimating) {
+                    showFloatingText("はみがき シュッシュ シャカシャカ シュッシュ");
+                }
+            };
+
+            // メッセージをクリア
+            updateMessage("ピョンピョンに はみがきを させてあげてね");
+
+            // 効果音の再生
+            const brushSound = new Audio('brush_teeth2.mp3');
+            brush.addEventListener('dragstart', function () {
+                brushSound.play();
+            });
+
+            brush.addEventListener('dragend', function () {
+                brushSound.pause();
+                brushSound.currentTime = 0;
+            });
+
+            // ピョンピョンに当たったときの処理
+            document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
+                event.preventDefault();
+            });
+
+            document.getElementById('pyonpyon').addEventListener('drop', function (event) {
+                event.preventDefault();
+                const draggedItem = event.dataTransfer.getData("text/plain");
+                if (draggedItem === "tyel.jpg") {
+                    updateMessage("");
+                } else {
+                    // 食べ物の処理を行わない
+                    updateMessage("");
+                }
+            });
+        }
+
+        // ドロップイベントをリセットする関数
+        function resetDropEvent() {
+            document.getElementById('pyonpyon').removeEventListener('drop', function (event) {
+                event.preventDefault();
+                const foodName = event.dataTransfer.getData("text/plain");
+                if (foodName === "tyel.jpg") {
+                    updateMessage("");
+                } else if (growthStage === 0) {
+                    feed(foodName);
+                } else {
+                    updateMessage("ピョンピョンは もう おなかいっぱいです！");
+                }
+            });
+
+            // 新しいドロップイベントを追加
+            document.getElementById('pyonpyon').addEventListener('drop', function (event) {
+                event.preventDefault();
+                const foodName = event.dataTransfer.getData("text/plain");
+                feed(foodName);
+            });
+        }
+
+        function readBook() {
+            // 画像とボタンを非表示にする
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('pyonpyon').style.display = 'none';
+
+            // もどボタンを削除
+            const returnButton = document.getElementById('returnButton');
+            if (returnButton) {
+                returnButton.remove();
+            }
+
+            // メッセージをクリア
+            updateMessage("");
+
+            // 絵本の表示
+            const storybook = document.createElement('div');
+            storybook.className = 'storybook';
+            const bookImage = document.createElement('img');
+            bookImage.src = `miku${currentPage}.jpg`; // タイトル画像をmiku0.jpgに変更
+            const storyText = document.createElement('div');
+            storyText.className = 'storybook-text';
+            storyText.innerText = storyPages[currentPage]; // タイトルを表示
+            storybook.appendChild(bookImage);
+            storybook.appendChild(storyText);
+            document.body.appendChild(storybook);
+
+            // 次のページボタン
+            const nextPageButton = document.createElement('button');
+            nextPageButton.className = 'next-page-button';
+            nextPageButton.innerText = "次のページ";
+            nextPageButton.onclick = () => {
+                currentPage++;
+                if (currentPage < storyPages.length) {
+                    storyText.innerText = storyPages[currentPage];
+                    bookImage.src = `miku${currentPage}.jpg`; // ページごとに画像を切り替え
+                } else {
+                    // 最後のページ
+                    nextPageButton.innerText = "えほん おわり";
+                    nextPageButton.onclick = () => {
+                        storybook.remove();
+                        nextPageButton.remove();
+                        goBack();
+                        updateMessage("ピョンピョンは えほんを たのしんでいます！");
+                        showFloatingText("(^-^)♪");
+                    };
+                }
+            };
+            storybook.appendChild(nextPageButton);
+        }
+
+        function drag(event) {
+            event.dataTransfer.setData("text/plain", event.target.src);
+        }
+
+        function feed(foodName) {
+            // ピョンピョン自身の画像がドラッグされた場合は何もしない
+            if (foodName === "http://127.0.0.1:5500/pyonpyon.png") {
+                return; // 何も起こさない
+            }
+
+            happiness += 10;
+            updateMessage(`ピョンピョンは ${foodName} `);
+            showFloatingText("(^-^)♪");
+            document.getElementById('pyonpyon').classList.add('jump');
+
+            // 効果音の再生
+            const draggingSound = new Audio('dragging_sound.mp3');
+            draggingSound.play();
+
+            setTimeout(() => {
+                document.getElementById('pyonpyon').classList.remove('jump');
+            }, 1000);
+
+            // 満腹度を増やす
+            stomachGauge++;
+            if (stomachGauge >= 5) {
+                setTimeout(() => {
+                    updateMessage("おなかいっぱいで もう たべられないよ！");
+                    showFloatingText("まんぷく！");
+                    setTimeout(goBack, 2000); // 2秒後に戻る
+                }, 1200);
+            }
+        }
+
+        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
+            event.preventDefault();
+            const foodName = event.dataTransfer.getData("text/plain");
+
+            // ピョンピョン自身がドロップされた場合の処理
+            if (foodName === "http://127.0.0.1:5500/pyonpyon.png") {
+                // 何もしない
+            } else if (foodName === "tyel.jpg") {
+                updateMessage("ピョンピョンは はみがきを して すっきり！");
+            } else if (growthStage === 0) {
+                feed(foodName);
+            } else {
+                updateMessage("ピョンピョンは もう おなかいっぱいです！");
+            }
+        });
+
+
+
+        function goToToilet() {
+            // ボタンを非表示にして、トイレ画面を表示
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('pyonpyon').style.display = 'none';
+
+            // トイレシーンを表示
+            const toiletScene = document.createElement('div');
+            toiletScene.className = 'toilet-scene';
+
+            // toilet.jpgを表示
+            const toiletImage = document.createElement('img');
+            toiletImage.src = 'toilet.jpg';
+            toiletScene.appendChild(toiletImage);
+
+            // ピョンピョンを表示
+            const pyonpyonImage = document.createElement('img');
+            // 現在の成長段階に応じた画像を表示
+            if (growthStage === 3) {
+                pyonpyonImage.src = 'pyonpyon_grown3.png';
+            } else if (growthStage === 2) {
+                pyonpyonImage.src = 'pyonpyon_grown2.png';
+            } else if (growthStage === 1) {
+                pyonpyonImage.src = 'pyonpyon_grown.png';
+            } else {
+                pyonpyonImage.src = 'pyonpyon.png';
+            }
+            pyonpyonImage.style.position = 'absolute'; // 位置を絶対に設定
+            pyonpyonImage.style.left = '60%'; // トイレ画像の右横に配置
+            pyonpyonImage.style.bottom = '40%'; // 下方に見切れないように配置
+            pyonpyonImage.style.transition = 'bottom 1s ease, left 1s ease'; // トランジションを追加
+            toiletScene.appendChild(pyonpyonImage);
+
+            document.body.appendChild(toiletScene);
+
+            // メッセージを表示
+            updateMessage("ピョンピョンはトイレに いくのを イヤがっています");
+
+            // 選択肢ボタンを表示
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.position = 'absolute';
+            buttonContainer.style.top = '20px'; // 上方に配置
+            buttonContainer.style.left = '50%';
+            buttonContainer.style.transform = 'translateX(-50%)'; // 中央揃え
+            toiletScene.appendChild(buttonContainer);
+
+            const optionButton1 = document.createElement('button');
+            optionButton1.innerText = "がんばってトイレに すわってみようね";
+            optionButton1.style.fontSize = '24px'; // 大きめの文字サイズ
+            optionButton1.onclick = () => handleOptionSelect(optionButton1);
+            buttonContainer.appendChild(optionButton1);
+
+            const optionButton2 = document.createElement('button');
+            optionButton2.innerText = "トイレにすわって 10を3かい かぞえてみようね";
+            optionButton2.style.fontSize = '24px'; // 大きめの文字サイズ
+            optionButton2.onclick = () => handleOptionSelect(optionButton2);
+            buttonContainer.appendChild(optionButton2);
+
+            // 選択肢ボタンが押されたときの処理
+            function handleOptionSelect(selectedButton) {
+                // ボタンを消去
+                buttonContainer.remove();
+
+                // メッセージを表示
+                updateMessage("ピョンピョンは がんばって トイレに すわってみる きもちに なりました。");
+
+                // ジャンプアニメーションを開始
+                pyonpyonImage.style.animation = 'jumpAnimation 0.5s ease-in-out 3'; // 3回ジャンプ
+                const flushSound = new Audio('jump07.mp3');
+                flushSound.play();
+                pyonpyonImage.style.bottom = '50'; // トイレの上に配置
+                pyonpyonImage.style.left = '47%'; // トイレ画像の右横に配置
+
+
+
+                const messages = [
+                    "ピョンピョンは がんばって トイレにすわりました。",
+                    "でるかな でるかな？・・・でたー！"
+                ];
+
+
+                let messageIndex = 0;
+
+                function showNextMessage() {
+                    if (messageIndex < messages.length) {
+                        updateMessage(messages[messageIndex]);
+                        messageIndex++;
+                        setTimeout(showNextMessage, 1000); // 1秒後に次のメッセージを表示
+                        // 効果音を再生
+                        const draggingSound = new Audio('dragging_sound.mp3');
+                        draggingSound.play();
+                    } else {
+
+                        // "ながす"ボタンを表示
+                        showFlushButton();
+                    }
+                }
+                showNextMessage();
+            }
+
+            // "ながす"ボタンを表示する関数
+            function showFlushButton() {
+                const flushButton = document.createElement('button');
+                flushButton.innerText = "ながす";
+                flushButton.style.fontSize = '24px'; // 大きめの文字サイズ
+                flushButton.style.position = 'absolute';
+                flushButton.style.top = '20px';
+                flushButton.style.left = '50%';
+                flushButton.style.transform = 'translateX(-50%)'; // 中央揃え
+                toiletScene.appendChild(flushButton);
+
+                flushButton.onclick = () => {
+                    // 効果音の再生
+                    const flushSound = new Audio('flush_in_toilet1.mp3');
+                    flushSound.play();
+
+                    // 最後のメッセージを表示
+                    updateMessage("ピョンピョンはトイレで すっきり しました！");
+                    stomachGauge = 0; // トイレですっきりしてお腹が空く
+
+                    // "ながす"ボタンを消去
+                    flushButton.remove();
+
+                    // 戻るボタンを表示
+                    const returnButton = document.createElement('button');
+                    returnButton.innerText = "もどる";
+                    returnButton.style.position = 'absolute';
+                    returnButton.style.bottom = '100px';
+                    returnButton.style.right = '60px';
+                    returnButton.style.zIndex = '20';
+                    returnButton.onclick = () => {
+                        goBack(); // 元の画面に戻る
+                        toiletScene.remove(); // トイレシーンを削除
+                    };
+                    toiletScene.appendChild(returnButton); // 戻るボタンをトイレシーンに追加
+
+                    // トイレシーンを表示する際に、戻るボタンが見えるか確認
+                    console.log(toiletScene); // トイレシーンが正しく表示されているか確認
+                };
+            }
+        }
+
+        function jump() {
+            happiness += 12;
+            updateMessage("ピョンピョンは ジャンプして あそんでいます！");
+            showFloatingText("(^-^)♪");
+
+            const pyonpyon = document.getElementById('pyonpyon');
+            pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 6'; // 2回ジャンプを3セット
+
+            // 効果音の再生
+            const jumpSound = new Audio('jump07.mp3');
+            jumpSound.play();
+
+            // アニメーション終了後にリセット
+            setTimeout(() => {
+                pyonpyon.style.animation = '';
+            }, 3000);
+
+            // ジャンプで少しお腹が空く
+            if (stomachGauge > 0) stomachGauge--;
+        }
+
+        function sleep() {
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('pyonpyon').style.display = 'none';
+            document.getElementById('sleep-overlay').style.display = 'flex';
+
+            // BGMがあるなら止めるか静かにする処理をここに入れる
+            updateMessage("おやすみなさい・・・");
+        }
+
+        function wakeUp() {
+            document.getElementById('action-buttons').style.display = 'block';
+            document.getElementById('pyonpyon').style.display = 'block';
+            document.getElementById('sleep-overlay').style.display = 'none';
+            updateMessage("おはよう！ よくねたね！");
+            showFloatingText("(^o^)/");
+        }
+
+
+        let growthStage = 0; // 成長段階 (0: 初期, 1: 1回目, 2: 2回目, 3: 3回目)
+
+        function checkGrowth() {
+            if (happiness >= 1500 && growthStage < 3) {
+                growthStage = 3;
+                document.getElementById('pyonpyon').src = 'pyonpyon_grown3.png';
+                updateMessage("ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！");
+                showFloatingText("(^0^)♪");
+            } else if (happiness >= 1000 && growthStage < 2) {
+                growthStage = 2;
+                document.getElementById('pyonpyon').src = 'pyonpyon_grown2.png';
+                updateMessage("ピョンピョンは さらに せいちょう しました！");
+                showFloatingText("(^-^)♪");
+            } else if (happiness >= 500 && growthStage < 1) {
+                growthStage = 1;
+                document.getElementById('pyonpyon').src = 'pyonpyon_grown.png';
+                updateMessage("ピョンピョンは せいちょう しました！");
+                showFloatingText("(^-^)♪");
+            }
+        }
+
+        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
+            event.preventDefault();
+            const foodName = event.dataTransfer.getData("text/plain");
+            if (foodName === "tyel.jpg") {
+                updateMessage("ピョンピョンは はみがきを して すっきり！");
+            } else if (growthStage === 0) {
+                feed(foodName);
+            } else {
+                updateMessage("ピョンピョンは はみがきを して すっきり！");
+            }
+        });
+
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', checkGrowth);
+        });
+
+        function drag(event) {
+            event.dataTransfer.setData("text/plain", event.target.alt);
+        }
+
+        document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
+            event.preventDefault();
+        });
+
+        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
+            event.preventDefault();
+            const foodName = event.dataTransfer.getData("text/plain");
+            feed(foodName);
+        });
+
+        function goBack() {
+            document.getElementById('action-buttons').style.display = 'block';
+            document.getElementById('pyonpyon').style.display = 'block';
+            document.getElementById('pyonpyon').style.position = 'relative'; // 位置をリセット
+            document.getElementById('pyonpyon').style.left = '0'; // 左位置をリセット
+            document.getElementById('pyonpyon').style.top = '0'; // 上位置をリセット
+            document.getElementById('food-selection').style.display = 'none';
+            currentPage = 0; // ページをリセット
+            updateMessage(""); // メッセージをクリア
+        }
+    </script>
+</body>
+
+</html>
