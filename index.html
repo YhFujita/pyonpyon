@@ -230,6 +230,10 @@
 
 <body>
     <h1>ピョンピョンの おせわゲーム</h1>
+    <div id="happiness-display"
+        style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; color: #ff69b4;">
+        <span id="heart-icon">❤</span> <span id="happiness-value">0</span>
+    </div>
     <img id="pyonpyon" src="pyonpyon.png" alt="ピョンピョン">
     <div id="action-buttons">
         <button onclick="takeForWalk()">さんぽ</button>
@@ -285,7 +289,7 @@
 
         let happiness = 0;
         let isAnimating = false; // アニメーション中かどうかを追跡
-        let stomachGauge = 0; // 満腹度 (最大5)
+        let eatenFoods = new Set(); // 食べたものを記録
         let currentPage = 0; // 現在のページ
 
 
@@ -395,8 +399,8 @@
 
             initialJump();
 
-            // さんぽで少しお腹が空く
-            stomachGauge = 0;
+            // さんぽでリセット（必要なら）
+            // eatenFoods.clear(); // ここではクリアしない（食事画面を開くときにクリアする）
         }
 
         function goBackHome() {
@@ -414,8 +418,10 @@
         function showFoodSelection() {
             document.getElementById('action-buttons').style.display = 'none';
             document.getElementById('food-selection').style.display = 'block';
-            document.getElementById('food-selection').style.display = 'block';
             updateMessage(""); // メッセージをクリア
+
+            // 食事セッションの開始：食べた記録をリセット
+            eatenFoods.clear();
 
             // 全ての食材を表示状態にリセット
             document.querySelectorAll('.food-item').forEach(img => {
@@ -551,6 +557,7 @@
 
         function feed(foodId, foodAlt) {
             happiness += 10;
+            document.getElementById('happiness-value').innerText = happiness; // 幸福度表示を更新
             updateMessage(`ピョンピョンは ${foodAlt} を たべました！ `);
             showFloatingText("(^-^)♪");
             document.getElementById('pyonpyon').classList.add('jump');
@@ -559,6 +566,7 @@
             if (foodId) {
                 const foodElement = document.getElementById(foodId);
                 if (foodElement) foodElement.style.display = 'none';
+                eatenFoods.add(foodId);
             }
 
             // 効果音の再生
@@ -569,9 +577,8 @@
                 document.getElementById('pyonpyon').classList.remove('jump');
             }, 1000);
 
-            // 満腹度を増やす
-            stomachGauge++;
-            if (stomachGauge >= 20) {
+            // 全種類（5つ）食べたら満腹
+            if (eatenFoods.size >= 5) {
                 setTimeout(() => {
                     updateMessage("おなかいっぱいで もう たべられないよ！");
                     showFloatingText("まんぷく！");
@@ -609,7 +616,7 @@
                 updateMessage("ピョンピョンは はみがきを して すっきり！");
             } else if (foodId && foodId.startsWith('food-')) {
                 // 通常の食材ドロップ
-                if (stomachGauge < 20) {
+                if (eatenFoods.size < 5) {
                     feed(foodId, foodAlt);
                 } else {
                     updateMessage("ピョンピョンは もう おなかいっぱいです！");
@@ -802,24 +809,58 @@
         }
 
         function showHeartsInSleep() {
-            showFloatingText("❤");
+            // ピョンピョンは非表示なので、sleeping-imgを基準にする
+            const sleepingImg = document.getElementById('sleeping-img');
+            const rect = sleepingImg.getBoundingClientRect();
+
+            const heart = document.createElement('div');
+            heart.innerText = "❤";
+            heart.style.position = 'fixed';
+            heart.style.color = '#ff69b4';
+            heart.style.fontSize = '30px';
+            heart.style.fontWeight = 'bold';
+            heart.style.zIndex = '1000'; // オーバーレイより上に
+            heart.style.pointerEvents = 'none'; // クリックを邪魔しない
+
+            // ランダムな位置に表示（画像周辺）
+            const randomX = (Math.random() * rect.width) - (rect.width / 2);
+            const randomY = (Math.random() * rect.height / 2) - (rect.height / 4);
+
+            heart.style.left = `${rect.left + rect.width / 2 + randomX}px`;
+            heart.style.top = `${rect.top + rect.height / 2 + randomY}px`;
+
+            document.body.appendChild(heart);
+
+            // アニメーション（ふわっと上がって消える）
+            heart.animate([
+                { transform: 'translateY(0) scale(1)', opacity: 1 },
+                { transform: 'translateY(-50px) scale(1.5)', opacity: 0 }
+            ], {
+                duration: 1000,
+                easing: 'ease-out'
+            }).onfinish = () => heart.remove();
+
+            // 幸福度も上げる（寝ている間にナデナデ）
+            happiness += 1;
+            document.getElementById('happiness-value').innerText = happiness;
         }
 
 
         let growthStage = 0; // 成長段階 (0: 初期, 1: 1回目, 2: 2回目, 3: 3回目)
 
         function checkGrowth() {
-            if (happiness >= 500 && growthStage < 3) { // 1500 -> 500
+            // 成長速度を早く調整: 30, 70, 120
+            if (happiness >= 120 && growthStage < 3) {
                 growthStage = 3;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown3.png';
                 updateMessage("ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！");
                 showFloatingText("(^0^)♪");
-            } else if (happiness >= 300 && growthStage < 2) { // 1000 -> 300
+            } else if (happiness >= 70 && growthStage < 2) {
                 growthStage = 2;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown2.png';
                 updateMessage("ピョンピョンは さらに せいちょう しました！");
                 showFloatingText("(^-^)♪");
-            } else if (happiness >= 150 && growthStage < 1) { // 500 -> 150
+            } else if (happiness >= 30 && growthStage < 1) {
                 growthStage = 1;
                 document.getElementById('pyonpyon').src = 'pyonpyon_grown.png';
                 updateMessage("ピョンピョンは せいちょう しました！");
