@@ -307,21 +307,23 @@
     </div>
 
     <style>
-        @keyframes flashWhite {
-
-            0%,
-            100% {
-                filter: brightness(1);
+        @keyframes flashPink {
+            0% {
+                filter: sepia(1) hue-rotate(310deg) saturate(4) brightness(1.2);
             }
 
             50% {
-                filter: brightness(100);
+                filter: sepia(1) hue-rotate(310deg) saturate(8) brightness(1.5);
+            }
+
+            100% {
+                filter: sepia(1) hue-rotate(310deg) saturate(4) brightness(1.2);
             }
         }
 
         .evolving {
-            animation: flashWhite 1s ease-in-out 3;
-            /* 3回点滅 */
+            animation: flashPink 0.5s ease-in-out infinite alternate;
+            /* ピンク色に発光し続ける */
         }
 
         #evolution-overlay.active {
@@ -519,6 +521,18 @@
         }
 
         function goBackHome() {
+            // 散歩完了ボーナス
+            happiness += 10;
+            document.getElementById('happiness-value').innerText = happiness;
+            checkGrowth();
+
+            if (isEvolving) {
+                // 進化中は散歩用の一時要素（戻るボタンなど）だけ削除して、あとはcheckGrowthに任せる
+                const returnButton = document.getElementById('returnButton');
+                if (returnButton) returnButton.remove();
+                return;
+            }
+
             // 元の画面に戻す
             document.querySelector('.main-container').style.display = 'flex'; // Restore flex
             const container = document.querySelector('.main-container');
@@ -544,6 +558,12 @@
             happiness += 10;
             document.getElementById('happiness-value').innerText = happiness;
             checkGrowth();
+
+            if (isEvolving) {
+                const returnButton = document.getElementById('returnButton');
+                if (returnButton) returnButton.remove();
+                return;
+            }
         }
 
         function showFoodSelection() {
@@ -596,6 +616,8 @@
                 happiness += 10;
                 document.getElementById('happiness-value').innerText = happiness;
                 checkGrowth();
+
+                if (isEvolving) return;
 
                 goBack();
                 updateMessage("ピョンピョンは はみがきを しました！");
@@ -686,6 +708,8 @@
                         happiness += 10;
                         document.getElementById('happiness-value').innerText = happiness;
                         checkGrowth();
+
+                        if (isEvolving) return;
 
                         goBack();
                         updateMessage("ピョンピョンは えほんを たのしんでいます！");
@@ -966,6 +990,8 @@
                     document.getElementById('happiness-value').innerText = happiness;
                     checkGrowth();
 
+                    if (isEvolving) return;
+
                     stomachGauge = 0; // トイレですっきりしてお腹が空く
 
                     // "ながす"ボタンを消去
@@ -1000,6 +1026,8 @@
             updateMessage("ピョンピョンは ジャンプして あそんでいます！");
             showFloatingText("(^-^)♪");
             checkGrowth();
+
+            if (isEvolving) return;
 
             const pyonpyon = document.getElementById('pyonpyon');
             pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 6'; // 2回ジャンプを3セット
@@ -1132,8 +1160,16 @@
                 const pyonpyon = document.getElementById('pyonpyon');
                 pyonpyon.style.display = 'block';
                 pyonpyon.style.position = 'static';
+                // Reset positioning coordinates
+                pyonpyon.style.top = 'auto';
+                pyonpyon.style.left = 'auto';
+                pyonpyon.style.right = 'auto';
+                pyonpyon.style.bottom = 'auto';
+
                 pyonpyon.style.transform = 'translate(0,0)';
                 pyonpyon.style.margin = '0';
+
+                pyonpyon.style.animation = ''; // 既存のアニメーションをクリア
 
                 document.body.style.backgroundImage = 'none';
 
