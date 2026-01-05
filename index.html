@@ -8,8 +8,8 @@
         body {
             text-align: center;
             font-family: Arial, sans-serif;
-            overflow: hidden;
-            /* スクロールバーを非表示に */
+            overflow-y: auto;
+            /* スクロールバーを必要に応じて表示 */
             background-size: cover;
             /* 背景画像を画面全体に表示 */
             background-repeat: no-repeat;
@@ -190,7 +190,42 @@
             }
         }
 
+        /* PC Layout adjustments */
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            /* Adjust height to fit screen */
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #action-buttons {
+            width: 40%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+        }
+
+        #pyonpyon {
+            object-fit: contain;
+            /* margin adjustments handled by flex */
+        }
+
         @media (max-width: 600px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            #action-buttons {
+                width: 100%;
+            }
+
             body {
                 font-size: 14px;
                 /* Adjust font size for smaller screens */
@@ -234,16 +269,18 @@
         style="position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; color: #ff69b4;">
         <span id="heart-icon">❤</span> <span id="happiness-value">0</span>
     </div>
-    <img id="pyonpyon" src="pyonpyon.png" alt="ピョンピョン">
-    <div id="action-buttons">
-        <button onclick="takeForWalk()">さんぽ</button>
-        <button onclick="showFoodSelection()">ごはん</button>
-        <button onclick="brushTeeth()">はみがき</button>
-        <button onclick="readBook()">えほん</button>
-        <button onclick="goToToilet()">トイレ</button>
+    <div class="main-container">
+        <img id="pyonpyon" src="pyonpyon.png" alt="ピョンピョン">
+        <div id="action-buttons">
+            <button onclick="takeForWalk()">さんぽ</button>
+            <button onclick="showFoodSelection()">ごはん</button>
+            <button onclick="brushTeeth()">はみがき</button>
+            <button onclick="readBook()">えほん</button>
+            <button onclick="goToToilet()">トイレ</button>
 
-        <button onclick="jump()">ジャンプ</button>
-        <button onclick="sleep()">ねる</button>
+            <button onclick="jump()">ジャンプ</button>
+            <button onclick="sleep()">ねる</button>
+        </div>
     </div>
 
     <div id="sleep-overlay" onclick="showHeartsInSleep()"
@@ -648,14 +685,19 @@
             // ピョンピョンを表示
             const pyonpyonImage = document.createElement('img');
             // 現在の成長段階に応じた画像を表示
+            // 現在の成長段階に応じた画像を表示
             if (growthStage === 3) {
                 pyonpyonImage.src = 'pyonpyon_grown3.png';
+                pyonpyonImage.style.width = '260px'; // 3段階目は画像を大きく表示
             } else if (growthStage === 2) {
                 pyonpyonImage.src = 'pyonpyon_grown2.png';
+                pyonpyonImage.style.width = '260px'; // 2段階目も画像を大きく表示
             } else if (growthStage === 1) {
                 pyonpyonImage.src = 'pyonpyon_grown.png';
+                pyonpyonImage.style.width = '150px'; // 通常サイズ
             } else {
                 pyonpyonImage.src = 'pyonpyon.png';
+                pyonpyonImage.style.width = '150px'; // 通常サイズ
             }
             pyonpyonImage.style.position = 'absolute'; // 位置を絶対に設定
             pyonpyonImage.style.left = '60%'; // トイレ画像の右横に配置
@@ -858,17 +900,23 @@
             // 成長速度を早く調整: 30, 70, 120
             if (happiness >= 120 && growthStage < 3) {
                 growthStage = 3;
-                document.getElementById('pyonpyon').src = 'pyonpyon_grown3.png';
+                const pyonpyon = document.getElementById('pyonpyon');
+                pyonpyon.src = 'pyonpyon_grown3.png';
+                pyonpyon.style.width = '350px'; // 3段階目は画像を大きく表示
                 updateMessage("ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！");
                 showFloatingText("(^0^)♪");
             } else if (happiness >= 70 && growthStage < 2) {
                 growthStage = 2;
-                document.getElementById('pyonpyon').src = 'pyonpyon_grown2.png';
+                const pyonpyon = document.getElementById('pyonpyon');
+                pyonpyon.src = 'pyonpyon_grown2.png';
+                pyonpyon.style.width = '350px'; // 2段階目も画像を大きく表示
                 updateMessage("ピョンピョンは さらに せいちょう しました！");
                 showFloatingText("(^-^)♪");
             } else if (happiness >= 30 && growthStage < 1) {
                 growthStage = 1;
-                document.getElementById('pyonpyon').src = 'pyonpyon_grown.png';
+                const pyonpyon = document.getElementById('pyonpyon');
+                pyonpyon.src = 'pyonpyon_grown.png';
+                pyonpyon.style.width = '200px'; // サイズをリセット
                 updateMessage("ピョンピョンは せいちょう しました！");
                 showFloatingText("(^-^)♪");
             }
