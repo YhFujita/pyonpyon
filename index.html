@@ -321,6 +321,20 @@
             }
         }
 
+        @keyframes restoreColor {
+            0% {
+                filter: brightness(100);
+            }
+
+            100% {
+                filter: brightness(1);
+            }
+        }
+
+        .born {
+            animation: restoreColor 3s ease-in-out forwards;
+        }
+
         .evolving {
             animation: flashPink 0.5s ease-in-out infinite alternate;
             /* ピンク色に発光し続ける */
@@ -1191,13 +1205,15 @@
                     if (nextWidth) pyonpyon.style.width = nextWidth;
 
                     pyonpyon.classList.remove('evolving');
+                    pyonpyon.classList.add('born'); // 白からフェードイン
 
-                    updateMessage(message);
-                    showFloatingText("☆☆☆");
-
-                    // Cleanup
+                    // Cleanup after fade-in
                     setTimeout(() => {
+                        pyonpyon.classList.remove('born');
                         overlay.classList.remove('active');
+
+                        updateMessage(message);
+                        showFloatingText("☆☆☆");
 
                         // Wait for fade out
                         setTimeout(() => {
@@ -1208,7 +1224,7 @@
                             isEvolving = false;
                         }, 1000);
 
-                    }, 3000); // メッセージを表示して3秒待機
+                    }, 3000); // 3秒かけて白から戻るのを待つ
 
                 }, 4000); // 4秒間点滅アニメーション
             }
