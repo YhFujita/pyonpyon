@@ -302,9 +302,7 @@
         <button onclick="wakeUp(); event.stopPropagation();" style="margin-top:20px; font-size: 20px;">おきる</button>
     </div>
 
-    <div id="evolution-overlay"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:black; opacity:0; transition:opacity 1s; z-index:9998; pointer-events:none;">
-    </div>
+    <div id="evolution-overlay"></div>
 
     <style>
         @keyframes flashPink {
@@ -338,6 +336,20 @@
         .evolving {
             animation: flashPink 0.5s ease-in-out infinite alternate;
             /* ピンク色に発光し続ける */
+        }
+
+        #evolution-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            opacity: 0;
+            transition: opacity 1s;
+            z-index: 9998;
+            pointer-events: none;
         }
 
         #evolution-overlay.active {
