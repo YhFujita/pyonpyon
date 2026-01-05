@@ -1181,14 +1181,19 @@
 
                 // Reset Main Container
                 document.querySelector('.main-container').style.display = 'flex';
+                document.querySelector('.main-container').style.height = '70vh'; // Reset height
                 document.getElementById('action-buttons').style.display = 'none'; // Hide buttons during evolution
 
                 const pyonpyon = document.getElementById('pyonpyon');
                 pyonpyon.style.display = 'block';
                 pyonpyon.style.position = 'static';
-                // Reset positioning coordinates
+
+                // Force reset all positioning and movement styles
+                pyonpyon.style.transition = 'none'; // Disable transition for instant reset
                 pyonpyon.style.top = 'auto';
                 pyonpyon.style.left = 'auto';
+                pyonpyon.style.right = 'auto';
+                pyonpyon.style.bottom = 'auto';
                 pyonpyon.style.right = 'auto';
                 pyonpyon.style.bottom = 'auto';
 
