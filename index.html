@@ -302,7 +302,33 @@
         <button onclick="wakeUp(); event.stopPropagation();" style="margin-top:20px; font-size: 20px;">おきる</button>
     </div>
 
+    <div id="evolution-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:black; opacity:0; transition:opacity 1s; z-index:9998; pointer-events:none;">
+    </div>
+
     <style>
+        @keyframes flashWhite {
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(100);
+            }
+        }
+
+        .evolving {
+            animation: flashWhite 1s ease-in-out 3;
+            /* 3回点滅 */
+        }
+
+        #evolution-overlay.active {
+            opacity: 0.8;
+            pointer-events: all;
+        }
+
         @keyframes breathe {
 
             0%,
@@ -733,6 +759,9 @@
                 showFloatingText(`+${points}pt`);
             }
             checkGrowth();
+
+            if (isEvolving) return; // 進化中はここで終了（メッセージ上書きや画面遷移を防ぐ）
+
             goBack();
             if (points > 0) {
                 updateMessage(`ごはんを ${eatenFoods.size}こ たべて ${points}ポイント ゲット！`);
@@ -1056,35 +1085,96 @@
 
 
         let growthStage = 0; // 成長段階 (0: 初期, 1: 1回目, 2: 2回目, 3: 3回目)
+        let isEvolving = false;
 
         function checkGrowth() {
+            if (isEvolving) return;
+
+            let nextStage = -1;
+            let nextImage = '';
+            let nextWidth = '';
+            let message = '';
 
             // 成長速度を早く調整: 30, 70, 120
             if (happiness >= 120 && growthStage < 3) {
-                growthStage = 3;
-                const pyonpyon = document.getElementById('pyonpyon');
-                pyonpyon.src = 'pyonpyon_grown3.png';
-                pyonpyon.style.width = '350px'; // 3段階目は画像を大きく表示
-                updateMessage("ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！");
-                showFloatingText("(^0^)♪");
+                nextStage = 3;
+                nextImage = 'pyonpyon_grown3.png';
+                nextWidth = '350px';
+                message = "ピョンピョンは さいしゅうだんかいに せいちょう しました！ すごい！";
+            } else if (happiness >= 70 && growthStage < 2) {
+                nextStage = 2;
+                nextImage = 'pyonpyon_grown2.png';
+                nextWidth = '350px';
+                message = "ピョンピョンは さらに せいちょう しました！";
+            } else if (happiness >= 30 && growthStage < 1) {
+                nextStage = 1;
+                nextImage = 'pyonpyon_grown.png';
+                nextWidth = '200px';
+                message = "ピョンピョンは せいちょう しました！";
             }
 
-            else if (happiness >= 70 && growthStage < 2) {
-                growthStage = 2;
-                const pyonpyon = document.getElementById('pyonpyon');
-                pyonpyon.src = 'pyonpyon_grown2.png';
-                pyonpyon.style.width = '350px'; // 2段階目も画像を大きく表示
-                updateMessage("ピョンピョンは さらに せいちょう しました！");
-                showFloatingText("(^-^)♪");
-            }
+            if (nextStage !== -1) {
+                isEvolving = true;
 
-            else if (happiness >= 30 && growthStage < 1) {
-                growthStage = 1;
+                // 強制的に初期画面に戻す (各シーンのクリーンアップ)
+                // Toilet / Storybook / Brush elements removal
+                document.querySelectorAll('.toilet-scene, .storybook').forEach(el => el.remove());
+                document.querySelectorAll('.brush').forEach(el => el.remove());
+                document.querySelectorAll('#returnButton, .next-page-button').forEach(el => el.remove());
+
+                // Reset Food Selection
+                document.getElementById('food-selection').style.display = 'none';
+
+                // Reset Main Container
+                document.querySelector('.main-container').style.display = 'flex';
+                document.getElementById('action-buttons').style.display = 'none'; // Hide buttons during evolution
+
                 const pyonpyon = document.getElementById('pyonpyon');
-                pyonpyon.src = 'pyonpyon_grown.png';
-                pyonpyon.style.width = '200px'; // サイズをリセット
-                updateMessage("ピョンピョンは せいちょう しました！");
-                showFloatingText("(^-^)♪");
+                pyonpyon.style.display = 'block';
+                pyonpyon.style.position = 'static';
+                pyonpyon.style.transform = 'translate(0,0)';
+                pyonpyon.style.margin = '0';
+
+                document.body.style.backgroundImage = 'none';
+
+                // Overlay
+                const overlay = document.getElementById('evolution-overlay');
+                overlay.style.display = 'block';
+                setTimeout(() => overlay.classList.add('active'), 10);
+
+                updateMessage("おや...？ ピョンピョンのようすが...");
+
+                pyonpyon.style.zIndex = '9999';
+                pyonpyon.style.position = 'relative';
+                pyonpyon.classList.add('evolving');
+
+                // Evolution Sequence
+                setTimeout(() => {
+                    growthStage = nextStage;
+                    pyonpyon.src = nextImage;
+                    if (nextWidth) pyonpyon.style.width = nextWidth;
+
+                    pyonpyon.classList.remove('evolving');
+
+                    updateMessage(message);
+                    showFloatingText("☆☆☆");
+
+                    // Cleanup
+                    setTimeout(() => {
+                        overlay.classList.remove('active');
+
+                        // Wait for fade out
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            pyonpyon.style.zIndex = '';
+                            pyonpyon.style.position = 'static';
+                            document.getElementById('action-buttons').style.display = 'flex';
+                            isEvolving = false;
+                        }, 1000);
+
+                    }, 3000); // メッセージを表示して3秒待機
+
+                }, 4000); // 4秒間点滅アニメーション
             }
         }
 
@@ -1093,6 +1183,8 @@
 
 
         function goBack() {
+            if (isEvolving) return;
+
             document.querySelector('.main-container').style.display = 'flex'; // Restore main container
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('pyonpyon').style.display = 'block';
