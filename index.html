@@ -395,6 +395,7 @@
         let isAnimating = false; // アニメーション中かどうかを追跡
         let eatenFoods = new Set(); // 食べたものを記録
         let currentPage = 0; // 現在のページ
+        let autoMoveTimer = null; // さんぽの自動移動タイマー
 
 
         const storyPages = ["『みくちゃんの うちで あそぼう！』",
@@ -460,7 +461,7 @@
 
             let walkCount = 0;
             let jumpCount = 0;
-            let autoMoveTimer = null;
+            // let autoMoveTimer = null; // Global scope used now
             let isDragging = false;
 
             function playJumpSound() {
@@ -573,8 +574,15 @@
         }
 
         function goBackHome() {
-            // Drag解除
+            // Stop Auto Move Timer
+            if (autoMoveTimer) {
+                clearTimeout(autoMoveTimer);
+                autoMoveTimer = null;
+            }
+
+            // Drag解除 (Pointer Events)
             const pyonpyon = document.getElementById('pyonpyon');
+            pyonpyon.onpointerdown = null; // 重要: makeDraggableはonpointerdownを使用しているため
             pyonpyon.onmousedown = null;
             pyonpyon.ontouchstart = null;
             pyonpyon.style.cursor = 'default';
