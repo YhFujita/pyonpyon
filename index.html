@@ -1078,6 +1078,24 @@
             document.getElementById('pyonpyon').style.display = 'none';
             document.getElementById('sleep-overlay').style.display = 'flex';
 
+            const sleepingImg = document.getElementById('sleeping-img');
+
+            // 成長段階に応じて寝ている画像を変更
+            if (growthStage === 3) {
+                // 画像生成失敗のため、一時的にstage1の画像を使用（幅調整）
+                sleepingImg.src = 'pyonpyon_grown_sleeping.png';
+                sleepingImg.style.width = '350px';
+            } else if (growthStage === 2) {
+                sleepingImg.src = 'pyonpyon_grown_sleeping.png';
+                sleepingImg.style.width = '350px';
+            } else if (growthStage === 1) {
+                sleepingImg.src = 'pyonpyon_grown_sleeping.png';
+                sleepingImg.style.width = '200px';
+            } else {
+                sleepingImg.src = 'pyonpyon_sleeping.png';
+                sleepingImg.style.width = '300px';
+            }
+
             // BGMがあるなら止めるか静かにする処理をここに入れる
             updateMessage("おやすみなさい・・・");
         }
