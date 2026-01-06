@@ -291,11 +291,11 @@
             <button onclick="sleep()">ねる</button>
         </div>
         <div id="food-selection" class="food-selection">
-            <img id="food-apple" src="apple.jpg" alt="りんご" class="food-item">
-            <img id="food-mikan" src="mikan.jpg" alt="みかん" class="food-item">
-            <img id="food-strawberry" src="strawberry.jpg" alt="いちご" class="food-item">
-            <img id="food-grape" src="grape.jpg" alt="ぶどう" class="food-item">
-            <img id="food-banana" src="banana.jpg" alt="バナナ" class="food-item">
+            <img id="food-apple" src="apple.png" alt="りんご" class="food-item">
+            <img id="food-mikan" src="mikan.png" alt="みかん" class="food-item">
+            <img id="food-strawberry" src="strawberry.png" alt="いちご" class="food-item">
+            <img id="food-grape" src="grape.png" alt="ぶどう" class="food-item">
+            <img id="food-banana" src="banana.png" alt="バナナ" class="food-item">
             <p>どれを たべさせて あげますか？</p>
             <button onclick="finishEating()">もどる</button> <!-- もどるボタンを追加 -->
         </div>
@@ -645,9 +645,9 @@
             // ボタンを非表示にして、はみがき画面を表示
             document.getElementById('action-buttons').style.display = 'none';
 
-            // tyel.jpgを表示
+            // tyel.pngを表示
             const brush = document.createElement('img');
-            brush.src = 'tyel.jpg';
+            brush.src = 'tyel.png';
             brush.className = 'brush';
             brush.style.left = '30%'; // ピョンピョンに近づける
             brush.style.top = '50%';
