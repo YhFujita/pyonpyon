@@ -291,13 +291,11 @@
             <button onclick="sleep()">ねる</button>
         </div>
         <div id="food-selection" class="food-selection">
-            <img id="food-apple" src="apple.jpg" alt="りんご" class="food-item" draggable="true" ondragstart="drag(event)">
-            <img id="food-mikan" src="mikan.jpg" alt="みかん" class="food-item" draggable="true" ondragstart="drag(event)">
-            <img id="food-strawberry" src="strawberry.jpg" alt="いちご" class="food-item" draggable="true"
-                ondragstart="drag(event)">
-            <img id="food-grape" src="grape.jpg" alt="ぶどう" class="food-item" draggable="true" ondragstart="drag(event)">
-            <img id="food-banana" src="banana.jpg" alt="バナナ" class="food-item" draggable="true"
-                ondragstart="drag(event)">
+            <img id="food-apple" src="apple.jpg" alt="りんご" class="food-item">
+            <img id="food-mikan" src="mikan.jpg" alt="みかん" class="food-item">
+            <img id="food-strawberry" src="strawberry.jpg" alt="いちご" class="food-item">
+            <img id="food-grape" src="grape.jpg" alt="ぶどう" class="food-item">
+            <img id="food-banana" src="banana.jpg" alt="バナナ" class="food-item">
             <p>どれを たべさせて あげますか？</p>
             <button onclick="finishEating()">もどる</button> <!-- もどるボタンを追加 -->
         </div>
@@ -620,6 +618,20 @@
             // 全ての食材を表示状態にリセット
             document.querySelectorAll('.food-item').forEach(img => {
                 img.style.display = 'inline-block';
+
+                // Make draggable
+                makeDraggable(img, {
+                    onDrop: (element) => {
+                        // Check if hungry
+                        if (eatenFoods.size < 5) {
+                            feed(element.id, element.alt);
+                            return true; // Handled
+                        } else {
+                            updateMessage("ピョンピョンは もう おなかいっぱいです！");
+                            return false; // Not handled
+                        }
+                    }
+                });
             });
 
             // もどるボタンの位置を調整
@@ -639,9 +651,34 @@
             brush.className = 'brush';
             brush.style.left = '30%'; // ピョンピョンに近づける
             brush.style.top = '50%';
-            brush.draggable = true;
-            brush.ondragstart = drag;
+
             document.body.appendChild(brush);
+
+            const brushSound = new Audio('brush_teeth2.mp3');
+
+            makeDraggable(brush, {
+                onDrag: (element, event) => {
+                    const pyonpyon = document.getElementById('pyonpyon');
+                    const pRect = pyonpyon.getBoundingClientRect();
+                    const eRect = element.getBoundingClientRect();
+                    const eCenterX = eRect.left + eRect.width / 2;
+                    const eCenterY = eRect.top + eRect.height / 2;
+
+                    const isHit = (eCenterX >= pRect.left && eCenterX <= pRect.right &&
+                        eCenterY >= pRect.top && eCenterY <= pRect.bottom);
+
+                    if (isHit) {
+                        if (brushSound.paused) brushSound.play();
+                        if (!isAnimating) showFloatingText("はみがき シュッシュ");
+                    } else {
+                        brushSound.pause();
+                    }
+                },
+                onReturn: () => {
+                    brushSound.pause();
+                    brushSound.currentTime = 0;
+                }
+            });
 
             // もどボタンを追加
             const returnButton = document.createElement('button');
@@ -664,27 +701,8 @@
             };
             document.body.appendChild(returnButton);
 
-            // ドラッグ＆ドロップのイベントを追加
-            brush.ondrag = function () {
-                if (!isAnimating) {
-                    showFloatingText("はみがき シュッシュ シャカシャカ シュッシュ");
-                }
-            };
-
             // メッセージをクリア
             updateMessage("ピョンピョンに はみがきを させてあげてね");
-
-            // 効果音の再生
-            const brushSound = new Audio('brush_teeth2.mp3');
-
-            brush.addEventListener('dragstart', function () {
-                brushSound.play();
-            });
-
-            brush.addEventListener('dragend', function () {
-                brushSound.pause();
-                brushSound.currentTime = 0;
-            });
 
             // ピョンピョンに当たったときの処理（グローバルリスナーに任せるため、ここではリスナー追加を行わない）
             /* 
@@ -764,15 +782,107 @@
             storybook.appendChild(nextPageButton);
         }
 
-        function drag(event) {
-            const data = {
-                id: event.target.id,
-                alt: event.target.alt || event.target.getAttribute('alt') || "ごはん",
-                src: event.target.src
-            }
+        // 新しいドラッグ機能（Common Drag Logic）
+        function makeDraggable(element, options = {}) {
+            let spacer = null;
 
-                ;
-            event.dataTransfer.setData("text/plain", JSON.stringify(data));
+            element.ondragstart = () => false;
+            element.style.touchAction = 'none'; // タッチスクロール防止
+
+            element.onpointerdown = function (event) {
+                event.preventDefault();
+                element.setPointerCapture(event.pointerId);
+
+                const rect = element.getBoundingClientRect();
+                const offsetX = event.clientX - rect.left;
+                const offsetY = event.clientY - rect.top;
+
+                const style = window.getComputedStyle(element);
+                const isAbsolute = style.position === 'absolute' || style.position === 'fixed';
+
+                if (!isAbsolute) {
+                    // フロー要素の場合はスペーサーを作成
+                    spacer = document.createElement('div');
+                    spacer.style.width = rect.width + 'px';
+                    spacer.style.height = rect.height + 'px';
+                    spacer.style.display = style.display;
+                    spacer.style.margin = style.margin;
+                    element.parentNode.insertBefore(spacer, element);
+
+                    element.style.width = rect.width + 'px';
+                    element.style.height = rect.height + 'px';
+
+                    document.body.appendChild(element);
+                    element.style.position = 'fixed';
+                    element.style.left = rect.left + 'px';
+                    element.style.top = rect.top + 'px';
+                    element.style.zIndex = '10000';
+                } else {
+                    // 既にAbsoluteならZindexだけ上げる
+                    element.style.zIndex = '10000';
+                }
+
+                function onPointerMove(e) {
+                    element.style.left = (e.clientX - offsetX) + 'px';
+                    element.style.top = (e.clientY - offsetY) + 'px';
+
+                    if (options.onDrag) {
+                        options.onDrag(element, e);
+                    }
+                }
+
+                function onPointerUp(e) {
+                    element.onpointermove = null;
+                    element.onpointerup = null;
+
+                    const pyonpyon = document.getElementById('pyonpyon');
+                    const pRect = pyonpyon.getBoundingClientRect();
+                    const eRect = element.getBoundingClientRect();
+                    const eCenterX = eRect.left + eRect.width / 2;
+                    const eCenterY = eRect.top + eRect.height / 2;
+
+                    // Simple collision detection
+                    const isHit = (eCenterX >= pRect.left && eCenterX <= pRect.right &&
+                        eCenterY >= pRect.top && eCenterY <= pRect.bottom);
+
+                    let handled = false;
+                    if (isHit && options.onDrop) {
+                        handled = options.onDrop(element);
+                    }
+
+                    if (!handled) {
+                        if (options.onReturn) options.onReturn();
+
+                        // 元に戻すアニメーション
+                        if (!isAbsolute && spacer) {
+                            element.style.transition = 'top 0.3s, left 0.3s';
+                            const sRect = spacer.getBoundingClientRect();
+                            element.style.left = sRect.left + 'px';
+                            element.style.top = sRect.top + 'px';
+
+                            setTimeout(() => {
+                                element.style.transition = '';
+                                element.style.position = '';
+                                element.style.zIndex = '';
+                                element.style.width = '';
+                                element.style.height = '';
+                                element.style.left = '';
+                                element.style.top = '';
+                                if (spacer && spacer.parentNode) spacer.replaceWith(element);
+                                spacer = null;
+                            }, 300);
+                        } else if (isAbsolute) {
+                            // Absolute elements currently stay or Logic handled by caller if needed
+                            // For consistency, let's keep them where they are unless logic says otherwise
+                        }
+                    } else {
+                        if (!isAbsolute && spacer) spacer.remove();
+                    }
+                }
+
+                element.onpointermove = onPointerMove;
+                element.onpointerup = onPointerUp;
+            };
         }
 
         function feed(foodId, foodAlt) {
@@ -832,63 +942,7 @@
             }
         }
 
-        document.getElementById('pyonpyon').addEventListener('dragover', function (event) {
-            event.preventDefault(); // ドロップを許可するために必要
-        });
 
-        document.getElementById('pyonpyon').addEventListener('drop', function (event) {
-            event.preventDefault();
-
-            let data = {}
-
-                ;
-
-            try {
-                const rawData = event.dataTransfer.getData("text/plain");
-
-                if (rawData) {
-                    data = JSON.parse(rawData);
-                }
-            }
-
-            catch (e) {
-                // JSONでない場合（外部からのドロップなど）は無視、あるいはURLとして扱う
-                console.error("Drop data parsing error:", e);
-                // 後方互換のため、そのままsrcとして扱ってみる場合の処理をここに入れてもよいが、今回はスキップ
-                return;
-            }
-
-            const {
-                id: foodId, alt: foodAlt, src: foodName
-            }
-
-                = data;
-
-            // ピョンピョン自身がドロップされた場合やtyel.jpgの場合の処理
-            if (foodName && foodName.endsWith("pyonpyon.png")) {
-                // 何もしない
-            }
-
-            else if (foodName && foodName.includes("tyel.jpg")) {
-                updateMessage("ピョンピョンは はみがきを して すっきり！");
-            }
-
-            else if (foodId && foodId.startsWith('food-')) {
-
-                // 通常の食材ドロップ
-                if (eatenFoods.size < 5) {
-                    feed(foodId, foodAlt);
-                }
-
-                else {
-                    updateMessage("ピョンピョンは もう おなかいっぱいです！");
-                }
-            }
-
-            else if (growthStage === 0 && foodName) {
-                // 旧互換性（念のため）
-            }
-        });
 
 
 
