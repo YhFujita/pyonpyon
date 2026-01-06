@@ -438,51 +438,61 @@
 
         function takeForWalk() {
             // メッセージをクリア
-            updateMessage(""); // 散歩イベントに入る際にメッセージを消す
+            updateMessage("");
             document.querySelector('.main-container').style.display = 'none';
-            // pyonpyon element is inside main-container, so we need a separate way to animate it or clone it for walk?
-            // Wait, existing logic uses #pyonpyon. If we hide main-container, #pyonpyon is hidden.
-            // For walk, we likely want to just hide the buttons and change BG, but keep pyonpyon?
-            // The original logic was: action-buttons none, body bg change, pyonpyon stays.
-            // So for walk, we should NOT hide main-container, but hide action-buttons.
-            // But wait, #pyonpyon is inside .main-container which is flex centered.
-            // Walk animation moves the element absolutely or via translate.
 
-            // Let's modify approach for Walk: Hide action-buttons, modify main-container style to allow free movement?
-            // Or move pyonpyon out?
-
-            // Simpler for now: just hide action-buttons and allow pyonpyon (which is in main-container) to move.
-            // But main-container has centering. 
-            // Let's hide main-container and append a temporary walker pyonpyon? NO, that loses state.
-
-            // Adjusted Plan for Walk:
             document.getElementById('action-buttons').style.display = 'none';
-            // We need to reset flex centering effect or take pyonpyon out of flow?
-            // Actually, if actions are hidden, pyonpyon is alone in flex container. Main container has height 70vh.
-            // Walk uses absolute positioning logic or transforms?
-            // Original logic: relative position, margin auto.
-            // Walk logic: randomMove modifies transform.
 
-            // Let's make main-container not restrain it during walk?
             const container = document.querySelector('.main-container');
             container.style.display = 'block'; // Disable flex centering for walk mode
             container.style.height = '100vh';
 
             const pyonpyon = document.getElementById('pyonpyon');
-            pyonpyon.style.position = 'absolute'; // Free movement
-            pyonpyon.style.top = '50%';
+            pyonpyon.style.position = 'fixed'; // Use fixed for screen-relative movement
+            // Initial position center
             pyonpyon.style.left = '50%';
-            pyonpyon.style.margin = '-100px 0 0 -100px'; // Center roughly
+            pyonpyon.style.top = '50%';
+            pyonpyon.style.margin = '-100px 0 0 -100px'; // Adjust for size to center actually
+            // リセット
+            pyonpyon.style.transform = '';
 
             document.body.style.backgroundImage = "url('sanpo.jpg')";
 
             let walkCount = 0;
             let jumpCount = 0;
+            let autoMoveTimer = null;
+            let isDragging = false;
 
             function playJumpSound() {
                 const jumpSound = new Audio('jump07.mp3');
                 jumpSound.play();
             }
+
+            // 手動操作モード（ドラッグ可能にする）
+            makeDraggable(pyonpyon, {
+                onDrag: (element, event) => {
+                    if (!isDragging) {
+                        isDragging = true;
+                        // 自動移動のタイマーとトランジションを停止
+                        clearTimeout(autoMoveTimer);
+                        pyonpyon.style.transition = 'none';
+                        pyonpyon.style.margin = '0'; // Remove centering margin during drag
+                    }
+                },
+                onDrop: (element) => {
+                    isDragging = false;
+                    // ドラッグ終了後、少し待ってから自動移動再開または位置を維持
+                    pyonpyon.style.transition = 'top 1s ease-in-out, left 1s ease-in-out';
+
+                    // 現在のpixel位置を維持するため、marginは0のまま
+                    // 次の自動移動をスケジュール
+                    autoMoveTimer = setTimeout(() => {
+                        randomMove();
+                    }, 1000);
+
+                    return true; // handled
+                }
+            });
 
             function initialJump() {
                 if (jumpCount < 3) {
@@ -493,18 +503,22 @@
                     setTimeout(() => {
                         pyonpyon.style.animation = '';
                         initialJump();
-                    }
+                    }, 500);
+                } else {
+                    // Marginを解除して絶対座標モードへ移行（スムーズにつなぐ）
+                    const rect = pyonpyon.getBoundingClientRect();
+                    pyonpyon.style.margin = '0';
+                    pyonpyon.style.left = rect.left + 'px';
+                    pyonpyon.style.top = rect.top + 'px';
 
-                        , 500); // ジャンプアニメーションの時間に合わせる
-                }
-
-                else {
                     randomMove();
                 }
             }
 
             function randomMove() {
-                if (walkCount >= 3) {
+                if (isDragging) return; // ドラッグ中は自動移動しない
+
+                if (walkCount >= 5) { // 少し回数を増やす
                     // もどるボタンを追加
                     const returnButton = document.createElement('button');
                     returnButton.innerText = "もどる";
@@ -518,83 +532,86 @@
 
                     updateMessage("ピョンピョンは さんぽに いきました！");
                     showFloatingText("(^-^)♪");
+
+                    // 完了後も手動で遊べるように、自動移動は続けるか停止するか
+                    // ここでは「探索完了」だが、動き続けてもかわいいので続ける
+                    autoMoveTimer = setTimeout(() => {
+                        randomMove();
+                    }, 2000);
                     return;
                 }
 
-                // ランダムに2回斜め移動
-                const deltaX = (Math.random() * 300 - 150); // -150から150の範囲でランダム
-                const deltaY = (Math.random() * 300 - 150); // -150から150の範囲でランダム
+                // ランダム移動ターゲット (画面内)
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                const pSize = 200; // approx size
 
-                const currentTransform = pyonpyon.style.transform.match(/translate\\((.*)px, (.*)px\\)/);
-                const currentX = currentTransform ? parseFloat(currentTransform[1]) : 0;
-                const currentY = currentTransform ? parseFloat(currentTransform[2]) : 0;
+                const targetX = Math.random() * (w - pSize);
+                const targetY = Math.random() * (h - pSize);
 
-                const newX = currentX + deltaX;
-                const newY = currentY + deltaY;
+                pyonpyon.style.transition = 'top 1.5s ease-in-out, left 1.5s ease-in-out';
+                pyonpyon.style.left = targetX + 'px';
+                pyonpyon.style.top = targetY + 'px';
 
-                pyonpyon.style.transition = 'transform 1s ease-in-out';
-
-                pyonpyon.style.transform = `translate(${newX}px, ${newY}px)`;
-
-                // 移動が完了した後にジャンプ
+                // 移動開始と同時にジャンプも混ぜる（分離したので可能）
+                // ただしCSSアニメーションはtransformを使うので、transition移動と共存可能
                 setTimeout(() => {
-                    pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 3'; // 3回ジャンプ
-
-                    setTimeout(() => {
-                        pyonpyon.style.animation = '';
-                        walkCount++;
-                        randomMove();
+                    if (!isDragging) {
+                        pyonpyon.style.animation = 'jumpAnimation 0.5s ease-in-out 3';
+                        // playJumpSound(); // 音がうるさければ減らす
                     }
+                }, 100);
 
-                        , 1500); // ジャンプアニメーションの時間に合わせる
-                }
-
-                    , 1000); // 移動時間に合わせる
+                autoMoveTimer = setTimeout(() => {
+                    pyonpyon.style.animation = '';
+                    walkCount++;
+                    randomMove();
+                }, 2000); // 移動(1.5s) + 待機
             }
 
             initialJump();
-
-            // さんぽでリセット（必要なら）
-            // eatenFoods.clear(); // ここではクリアしない（食事画面を開くときにクリアする）
         }
 
         function goBackHome() {
+            // Drag解除
+            const pyonpyon = document.getElementById('pyonpyon');
+            pyonpyon.onmousedown = null;
+            pyonpyon.ontouchstart = null;
+            pyonpyon.style.cursor = 'default';
+
             // 散歩完了ボーナス
             happiness += 10;
             document.getElementById('happiness-value').innerText = happiness;
             checkGrowth();
 
             if (isEvolving) {
-                // 進化中は散歩用の一時要素（戻るボタンなど）だけ削除して、あとはcheckGrowthに任せる
                 const returnButton = document.getElementById('returnButton');
                 if (returnButton) returnButton.remove();
                 return;
             }
 
-            // 元の画面に戻す
-            document.querySelector('.main-container').style.display = 'flex'; // Restore flex
+            document.querySelector('.main-container').style.display = 'flex';
             const container = document.querySelector('.main-container');
-            container.style.height = '70vh'; // Restore height
+            container.style.height = '70vh';
 
-            document.getElementById('action-buttons').style.display = 'flex'; // Restore buttons
+            document.getElementById('action-buttons').style.display = 'flex';
             document.body.style.backgroundImage = "none";
 
-            const pyonpyon = document.getElementById('pyonpyon');
-            pyonpyon.style.position = 'static'; // Restore position
+            pyonpyon.style.position = 'static';
             pyonpyon.style.margin = '0';
-            pyonpyon.style.transform = 'translate(0, 0)'; // 元の位置に戻す
+            pyonpyon.style.transform = '';
+            pyonpyon.style.top = 'auto';
+            pyonpyon.style.left = 'auto';
+            pyonpyon.style.transition = '';
 
             const returnButton = document.getElementById('returnButton');
 
             if (returnButton) {
-                returnButton.remove(); // ボタンを削除
+                returnButton.remove();
             }
 
             updateMessage("");
 
-            // 散歩完了ボーナス
-            happiness += 10;
-            document.getElementById('happiness-value').innerText = happiness;
             checkGrowth();
 
             if (isEvolving) {
