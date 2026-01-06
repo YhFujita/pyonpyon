@@ -16,6 +16,15 @@
             /* 背景画像を繰り返さない */
             background-position: center;
             /* 背景画像を中央に配置 */
+            /* Prevent text selection */
+            -webkit-user-select: none;
+            /* Chrome, Safari, Opera */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* IE 10+ */
+            user-select: none;
+            /* Standard syntax */
         }
 
         #message {
@@ -371,6 +380,11 @@
     </style>
     <p id="message"></p>
     <script>
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function (event) {
+            event.preventDefault();
+        });
+
         // BGMの再生
 
         document.getElementById('pyonpyon').addEventListener('click', function () {
